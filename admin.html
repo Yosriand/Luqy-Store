@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Admin Luqy Store</title>
+<title>Admin Luqqy Store</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-pink-50 min-h-screen">
 
 <header class="bg-gradient-to-r from-pink-400 to-rose-500 text-white p-6 text-center shadow">
-  <h1 class="text-3xl font-extrabold">Admin Luqy Store</h1>
+  <h1 class="text-3xl font-extrabold">Admin Luqqy Store</h1>
 </header>
 
 <div class="max-w-4xl mx-auto p-6">
@@ -17,11 +17,11 @@
   <!-- LOGIN -->
   <div id="loginBox" class="bg-white p-6 rounded-xl shadow">
     <h2 class="text-xl font-bold mb-4 text-pink-600">Login Admin</h2>
-    <input id="email" type="email" placeholder="Email" class="w-full border p-2 rounded mb-2"/>
-    <input id="password" type="password" placeholder="Password" class="w-full border p-2 rounded mb-4"/>
+    <input id="email" type="email" placeholder="Email *" class="w-full border p-2 rounded mb-2"/>
+    <input id="password" type="password" placeholder="Password *" class="w-full border p-2 rounded mb-4"/>
     <button id="loginBtn" class="w-full bg-pink-500 text-white p-2 rounded-full mb-2 hover:bg-pink-600 transition">Login</button>
     <button id="resetBtn" class="text-sm text-pink-500 underline w-full mb-2 hover:text-pink-600">Lupa password?</button>
-    <button id="backToVisitor" class="w-full border border-pink-400 text-pink-500 p-2 rounded-full hover:bg-pink-50 transition">← Kembali ke Luqy Store</button>
+    <button id="backToVisitor" class="w-full border border-pink-400 text-pink-500 p-2 rounded-full hover:bg-pink-50 transition">← Kembali ke Luqqy Store</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -70,7 +70,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-/* ELEMENT */
+/* ELEMENTS */
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
 const produkList = document.getElementById("produkList");
@@ -87,13 +87,14 @@ let editId = null;
 
 /* LOGIN */
 loginBtn.onclick = () => {
+  if(!email.value || !password.value){ alert("Email & Password wajib diisi"); return; }
   signInWithEmailAndPassword(auth,email.value,password.value)
     .catch(err=>alert("Login gagal: "+err.message));
 };
 
-/* RESET PASSWORD */
+/* RESET */
 resetBtn.onclick = () => {
-  if(!email.value) return alert("Masukkan email");
+  if(!email.value){ alert("Masukkan email"); return; }
   sendPasswordResetEmail(auth,email.value).then(()=>alert("📧 Email reset terkirim"));
 };
 
@@ -115,33 +116,26 @@ simpanBtn.onclick = async()=>{
     alert("❌ Nama, Link & Kategori wajib diisi");
     return;
   }
+  const data = {
+    nama: nama.value,
+    deskripsi: deskripsi.value,
+    link: link.value,
+    gambar: gambar.value,
+    kategori: kategori.value,
+    klik: editId ? undefined : 0,
+    createdAt: editId ? undefined : serverTimestamp()
+  };
 
   try{
     if(editId){
-      await updateDoc(doc(db,"produk",editId), {
-        nama: nama.value,
-        deskripsi: deskripsi.value,
-        link: link.value,
-        gambar: gambar.value,
-        kategori: kategori.value
-      });
-      alert("✅ Produk berhasil diupdate");
+      await updateDoc(doc(db,"produk",editId), data);
       editId = null;
+      alert("✅ Produk berhasil diupdate");
     }else{
-      await addDoc(collection(db,"produk"), {
-        nama: nama.value,
-        deskripsi: deskripsi.value,
-        link: link.value,
-        gambar: gambar.value,
-        kategori: kategori.value,
-        klik: 0,
-        createdAt: serverTimestamp()
-      });
+      await addDoc(collection(db,"produk"), data);
       alert("✅ Produk berhasil disimpan");
     }
-
-    // Reset form
-    nama.value = deskripsi.value = link.value = gambar.value = kategori.value = "";
+    nama.value=deskripsi.value=link.value=kategori.value=gambar.value="";
     loadProdukAdmin();
   }catch(e){ alert("❌ Gagal simpan: "+e.message);}
 };
@@ -206,6 +200,7 @@ async function loadProdukAdmin(){
 
       grid.appendChild(card);
     });
+
     produkList.appendChild(section);
   });
 }
