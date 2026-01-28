@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Admin Luqqy Store</title>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -21,9 +21,7 @@
     <input id="password" type="password" placeholder="Password" class="w-full border p-2 rounded mb-4"/>
     <button id="loginBtn" class="w-full bg-pink-500 text-white p-2 rounded-full mb-2">Login</button>
     <button id="resetBtn" class="text-sm text-pink-500 underline w-full mb-2">Lupa password?</button>
-    <button id="backToVisitor" class="w-full border border-pink-400 text-pink-500 p-2 rounded-full hover:bg-pink-50">
-      ← Kembali ke Luqqy Store
-    </button>
+    <button id="backToVisitor" class="w-full border border-pink-400 text-pink-500 p-2 rounded-full hover:bg-pink-50">← Kembali ke Luqqy Store</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -33,20 +31,22 @@
 
     <div class="bg-white p-6 rounded-xl shadow mb-6">
       <h2 class="font-bold mb-4">Tambah / Edit Produk</h2>
+
       <input id="nama" placeholder="Nama Produk *" class="w-full border p-2 rounded mb-2"/>
       <textarea id="deskripsi" placeholder="Deskripsi" class="w-full border p-2 rounded mb-2"></textarea>
       <input id="link" placeholder="Link Affiliate *" class="w-full border p-2 rounded mb-2"/>
+      <input id="gambar" type="file" accept="image/*" class="w-full border p-2 rounded mb-2"/>
       <select id="kategori" class="w-full border p-2 rounded mb-4">
         <option value="">Pilih Kategori *</option>
         <option value="skincare">💄 Skincare</option>
         <option value="fashion">👜 Fashion</option>
         <option value="home">🏠 Home & Living</option>
       </select>
-      <input id="gambar" placeholder="URL Gambar (opsional)" class="w-full border p-2 rounded mb-4"/>
-      <button id="simpanBtn" class="w-full bg-pink-500 text-white p-2 rounded-full">Simpan Produk</button>
+      <button id="simpanBtn" class="w-full bg-pink-500 text-white p-2 rounded-full mb-2">Simpan Produk</button>
     </div>
 
-    <div id="produkList"></div>
+    <!-- Preview Produk -->
+    <div id="list"></div>
   </div>
 </div>
 
@@ -54,160 +54,149 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 /* FIREBASE CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyAgvqSOqTr5zeGFArOWYSaUExCAlwEw2gE",
   authDomain: "luqqy-store.firebaseapp.com",
   projectId: "luqqy-store",
-  storageBucket: "luqqy-store.firebasestorage.app",
+  storageBucket: "luqqy-store.appspot.com",
   messagingSenderId: "157194853674",
   appId: "1:157194853674:web:936fac43307d852fedd253"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const auth = getAuth(app);
 
 /* ELEMENT */
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
-const produkList = document.getElementById("produkList");
-
+const list = document.getElementById("list");
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const nama = document.getElementById("nama");
 const deskripsi = document.getElementById("deskripsi");
 const link = document.getElementById("link");
-const kategori = document.getElementById("kategori");
 const gambar = document.getElementById("gambar");
-const simpanBtn = document.getElementById("simpanBtn");
-
-let editId = null;
+const kategori = document.getElementById("kategori");
 
 /* LOGIN */
-loginBtn.onclick = () => signInWithEmailAndPassword(auth,email.value,password.value).catch(err=>alert("Login gagal: "+err.message));
+loginBtn.onclick = () => {
+  signInWithEmailAndPassword(auth,email.value,password.value).catch(err=>alert("Login gagal: "+err.message));
+};
 
 /* RESET PASSWORD */
-resetBtn.onclick = ()=> { if(!email.value) return alert("Masukkan email"); sendPasswordResetEmail(auth,email.value).then(()=>alert("📧 Email reset terkirim")); };
+resetBtn.onclick = () => {
+  if(!email.value) return alert("Masukkan email");
+  sendPasswordResetEmail(auth,email.value).then(()=>alert("📧 Email reset terkirim")).catch(err=>alert(err.message));
+};
 
 /* BACK TO VISITOR */
-backToVisitor.onclick = ()=> location.href="index.html";
+backToVisitor.onclick = ()=>location.href="index.html";
 
 /* LOGOUT */
-logoutBtn.onclick = async()=>{await signOut(auth); location.href="index.html";};
+logoutBtn.onclick = async ()=>{await signOut(auth); location.href="index.html";};
 
 /* AUTH STATE */
 onAuthStateChanged(auth,user=>{
-  if(user){
-    loginBox.classList.add("hidden");
-    dashboard.classList.remove("hidden");
-    loadProdukPreview();
-  } else {
-    loginBox.classList.remove("hidden");
-    dashboard.classList.add("hidden");
-  }
+  if(user){ loginBox.classList.add("hidden"); dashboard.classList.remove("hidden"); loadProduk(); }
+  else{ loginBox.classList.remove("hidden"); dashboard.classList.add("hidden"); }
 });
 
-/* SIMPAN / UPDATE PRODUK */
-simpanBtn.onclick = async ()=>{
-  if(!nama.value || !link.value || !kategori.value){ alert("❌ Nama, Link & Kategori wajib diisi"); return; }
-
-  if(editId){
-    // Update
-    await updateDoc(doc(db,"produk",editId),{
-      nama:nama.value,
-      deskripsi:deskripsi.value,
-      link:link.value,
-      kategori:kategori.value,
-      gambar:gambar.value || "",
-      updatedAt:serverTimestamp()
-    });
-    editId=null;
-    simpanBtn.textContent="Simpan Produk";
-    alert("✅ Produk berhasil diupdate");
-  } else {
-    // Tambah baru
-    await addDoc(collection(db,"produk"),{
-      nama:nama.value,
-      deskripsi:deskripsi.value,
-      link:link.value,
-      kategori:kategori.value,
-      gambar:gambar.value || "",
-      klik:0,
-      createdAt:serverTimestamp()
-    });
-    alert("✅ Produk berhasil disimpan");
-  }
-
-  nama.value=deskripsi.value=link.value=kategori.value=gambar.value="";
-  loadProdukPreview();
-};
-
-/* LAZY LOAD PREVIEW PER KATEGORI */
-async function loadProdukPreview(){
+/* LOAD PRODUK */
+async function loadProduk(){
+  list.innerHTML="";
   const snap = await getDocs(collection(db,"produk"));
-  const allProduk = snap.docs.map(d=>({id:d.id,...d.data()}));
-  const kategoriMap = {skincare:[],fashion:[],home:[]};
-  allProduk.forEach(p=>{ if(kategoriMap[p.kategori]) kategoriMap[p.kategori].push(p); });
+  snap.forEach(d=>{
+    const p=d.data();
+    const div=document.createElement("div");
+    div.className="bg-white p-4 rounded-xl shadow mb-3";
+    div.innerHTML=`
+      <div class="flex justify-between items-center">
+        <div>
+          <b>${p.nama}</b> (${p.kategori})<br>
+          ${p.deskripsi||""}<br>
+          <a href="${p.link}" target="_blank" class="text-pink-500 underline">Link Produk</a>
+        </div>
+        <div class="flex flex-col gap-1">
+          <button class="editBtn bg-yellow-400 text-white px-2 py-1 rounded text-sm" data-id="${d.id}">Edit</button>
+          <button class="hapusBtn bg-red-500 text-white px-2 py-1 rounded text-sm" data-id="${d.id}">Hapus</button>
+        </div>
+      </div>
+      ${p.gambar ? `<img src="${p.gambar}" class="mt-2 rounded-xl w-48 object-cover"/>` : ""}
+    `;
+    list.appendChild(div);
+  });
 
-  produkList.innerHTML="";
-  Object.entries(kategoriMap).forEach(([key,items])=>{
-    if(items.length===0) return;
-    const details=document.createElement("details");
-    details.className="mb-4 border border-pink-200 rounded-xl bg-white shadow";
-    details.innerHTML=`<summary class="cursor-pointer font-bold text-pink-600 p-3">${key.toUpperCase()} (${items.length})</summary>
-      <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>`;
-    const grid = details.querySelector("div");
-
-    details.addEventListener("toggle",()=>{
-      if(details.open && grid.children.length===0){
-        items.forEach(p=>{
-          const card=document.createElement("div");
-          card.className="bg-white p-3 rounded-xl shadow";
-          let imgSrc = p.gambar;
-          if(!imgSrc && p.link) imgSrc = `https://api.microlink.io/?url=${encodeURIComponent(p.link)}&embed=image.url&meta=false&screenshot=false`;
-          if(!imgSrc) imgSrc="https://via.placeholder.com/400x400/ffe4e6/ec4899?text=Luqqy+Store";
-
-          card.innerHTML=`<div class="mb-2 rounded-xl overflow-hidden"><img src="${imgSrc}" class="w-full h-36 object-cover" onerror="this.src='https://via.placeholder.com/400x400/ffe4e6/ec4899?text=Luqqy+Store'"/></div>
-            <h3 class="font-bold text-pink-700">${p.nama}</h3>
-            <p class="text-sm text-gray-500 mb-2">${p.deskripsi||""}</p>
-            <a href="${p.link}" target="_blank" class="block bg-pink-400 hover:bg-pink-500 text-white py-2 rounded-full text-center font-semibold mb-1">Lihat Produk</a>
-            <div class="flex gap-2">
-              <button class="bg-yellow-100 text-yellow-600 px-2 py-1 rounded" onclick="editProduk('${p.id}')">Edit</button>
-              <button class="bg-red-100 text-red-500 px-2 py-1 rounded" onclick="hapusProduk('${p.id}')">Hapus</button>
-            </div>`;
-          grid.appendChild(card);
-        });
+  /* HAPUS */
+  document.querySelectorAll(".hapusBtn").forEach(btn=>{
+    btn.onclick=async ()=>{
+      if(confirm("Hapus produk?")){
+        await deleteDoc(doc(db,"produk",btn.dataset.id));
+        loadProduk();
       }
-    });
-    produkList.appendChild(details);
+    }
+  });
+
+  /* EDIT */
+  document.querySelectorAll(".editBtn").forEach(btn=>{
+    btn.onclick=async ()=>{
+      const d=await getDocs(collection(db,"produk"));
+      const docData=d.docs.find(x=>x.id===btn.dataset.id).data();
+      nama.value=docData.nama;
+      deskripsi.value=docData.deskripsi;
+      link.value=docData.link;
+      kategori.value=docData.kategori;
+      gambar.value=null;
+      simpanBtn.dataset.editId=btn.dataset.id;
+    }
   });
 }
 
-/* HAPUS PRODUK */
-window.hapusProduk = async id=>{
-  if(confirm("Hapus produk ini?")){
-    await deleteDoc(doc(db,"produk",id));
-    loadProdukPreview();
+/* SIMPAN PRODUK */
+simpanBtn.onclick=async ()=>{
+  if(!nama.value||!link.value||!kategori.value){
+    alert("❌ Nama, Link & Kategori wajib diisi!");
+    return;
   }
-};
 
-/* EDIT PRODUK */
-window.editProduk = async id=>{
-  const snap = await getDocs(collection(db,"produk"));
-  const produk = snap.docs.map(d=>({id:d.id,...d.data()})).find(p=>p.id===id);
-  if(produk){
-    nama.value = produk.nama;
-    deskripsi.value = produk.deskripsi;
-    link.value = produk.link;
-    kategori.value = produk.kategori;
-    gambar.value = produk.gambar || "";
-    editId = id;
-    simpanBtn.textContent="Update Produk";
-    window.scrollTo({ top:0, behavior:'smooth' });
+  let imageUrl="";
+  if(gambar.files.length>0){
+    const file=gambar.files[0];
+    if(file.size>500*1024){ alert("❌ Ukuran gambar max 500KB"); return;}
+    const storageRef=ref(storage,"produk/"+Date.now()+"_"+file.name);
+    await uploadBytes(storageRef,file);
+    imageUrl=await getDownloadURL(storageRef);
   }
+
+  const data={
+    nama:nama.value,
+    deskripsi:deskripsi.value,
+    link:link.value,
+    kategori:kategori.value,
+    gambar:imageUrl,
+    klik:0,
+    createdAt:serverTimestamp()
+  };
+
+  try{
+    if(simpanBtn.dataset.editId){
+      await updateDoc(doc(db,"produk",simpanBtn.dataset.editId),data);
+      delete simpanBtn.dataset.editId;
+      alert("✅ Produk berhasil diupdate");
+    }else{
+      await addDoc(collection(db,"produk"),data);
+      alert("✅ Produk berhasil disimpan");
+    }
+    nama.value=deskripsi.value=link.value=kategori.value="";
+    gambar.value=null;
+    loadProduk();
+  }catch(e){ alert("❌ Gagal simpan: "+e.message);}
 };
 </script>
+
 </body>
 </html>
