@@ -186,17 +186,39 @@ window.hapus = async id => {
 };
 
 /* SIMPAN */
+/* SIMPAN */
 simpanBtn.onclick = async () => {
-  if (!nama.value || !link.value || !gambar.value || !kategori.value) {
-    alert("❌ Semua field wajib diisi");
+
+  if (!nama.value.trim()) {
+    alert("❌ Nama produk wajib diisi");
+    return;
+  }
+
+  if (!deskripsi.value.trim()) {
+    alert("❌ Deskripsi produk wajib diisi");
+    return;
+  }
+
+  if (!link.value.trim()) {
+    alert("❌ Link produk wajib diisi");
+    return;
+  }
+
+  if (!gambar.value.trim()) {
+    alert("❌ Link gambar wajib diisi");
+    return;
+  }
+
+  if (!kategori.value) {
+    alert("❌ Kategori wajib dipilih");
     return;
   }
 
   await addDoc(collection(db, "produk"), {
-    nama: nama.value,
-    deskripsi: deskripsi.value,
-    link: link.value,
-    gambar: gambar.value,
+    nama: nama.value.trim(),
+    deskripsi: deskripsi.value.trim(),
+    link: link.value.trim(),
+    gambar: gambar.value.trim(),
     kategori: kategori.value,
     klik: 0,
     createdAt: serverTimestamp()
@@ -212,6 +234,7 @@ simpanBtn.onclick = async () => {
 
   loadProduk();
 };
+
 </script>
 
 </body>
