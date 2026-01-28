@@ -21,7 +21,7 @@
     <input id="password" type="password" placeholder="Password *" class="w-full border p-2 rounded mb-4"/>
     <button id="loginBtn" class="w-full bg-pink-500 text-white p-2 rounded-full mb-2 hover:bg-pink-600 transition">Login</button>
     <button id="resetBtn" class="text-sm text-pink-500 underline w-full mb-2 hover:text-pink-600">Lupa password?</button>
-    <button id="backToVisitor" class="w-full border border-pink-400 text-pink-500 p-2 rounded-full hover:bg-pink-50 transition">← Kembali ke Luqqy Store</button>
+    <button id="backToVisitor" class="w-full border border-pink-400 text-pink-500 p-2 rounded-full hover:bg-pink-50 transition">← Kembali ke Luqy Store</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -70,7 +70,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-/* ELEMENTS */
+/* ELEMENT */
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
 const produkList = document.getElementById("produkList");
@@ -87,14 +87,17 @@ let editId = null;
 
 /* LOGIN */
 loginBtn.onclick = () => {
-  if(!email.value || !password.value){ alert("Email & Password wajib diisi"); return; }
+  if(!email.value || !password.value){
+    alert("❌ Email & Password wajib diisi");
+    return;
+  }
   signInWithEmailAndPassword(auth,email.value,password.value)
     .catch(err=>alert("Login gagal: "+err.message));
 };
 
-/* RESET */
+/* RESET PASSWORD */
 resetBtn.onclick = () => {
-  if(!email.value){ alert("Masukkan email"); return; }
+  if(!email.value) return alert("Masukkan email");
   sendPasswordResetEmail(auth,email.value).then(()=>alert("📧 Email reset terkirim"));
 };
 
@@ -106,8 +109,14 @@ logoutBtn.onclick = async()=>{ await signOut(auth); location.href="index.html"; 
 
 /* AUTH STATE */
 onAuthStateChanged(auth,user=>{
-  if(user){ loginBox.classList.add("hidden"); dashboard.classList.remove("hidden"); loadProdukAdmin(); }
-  else{ loginBox.classList.remove("hidden"); dashboard.classList.add("hidden"); }
+  if(user){
+    loginBox.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+    loadProdukAdmin();
+  } else{
+    loginBox.classList.remove("hidden");
+    dashboard.classList.add("hidden");
+  }
 });
 
 /* SIMPAN / EDIT PRODUK */
@@ -116,28 +125,37 @@ simpanBtn.onclick = async()=>{
     alert("❌ Nama, Link & Kategori wajib diisi");
     return;
   }
-  const data = {
+
+  // Data yang dikirim
+  let data = {
     nama: nama.value,
     deskripsi: deskripsi.value,
     link: link.value,
     gambar: gambar.value,
-    kategori: kategori.value,
-    klik: editId ? undefined : 0,
-    createdAt: editId ? undefined : serverTimestamp()
+    kategori: kategori.value
   };
+
+  if(!editId){
+    // Tambah baru
+    data.klik = 0;
+    data.createdAt = serverTimestamp();
+  }
 
   try{
     if(editId){
       await updateDoc(doc(db,"produk",editId), data);
       editId = null;
       alert("✅ Produk berhasil diupdate");
-    }else{
+    } else {
       await addDoc(collection(db,"produk"), data);
       alert("✅ Produk berhasil disimpan");
     }
-    nama.value=deskripsi.value=link.value=kategori.value=gambar.value="";
+    // Reset input
+    nama.value = deskripsi.value = link.value = gambar.value = kategori.value = "";
     loadProdukAdmin();
-  }catch(e){ alert("❌ Gagal simpan: "+e.message);}
+  }catch(e){
+    alert("❌ Gagal simpan: "+e.message);
+  }
 };
 
 /* LOAD PRODUK ADMIN */
@@ -145,20 +163,22 @@ async function loadProdukAdmin(){
   produkList.innerHTML="";
   const snap = await getDocs(collection(db,"produk"));
   const kategoriMap = {};
+
   snap.forEach(d=>{
-    const p=d.data();
-    if(!kategoriMap[p.kategori]) kategoriMap[p.kategori]=[];
-    kategoriMap[p.kategori].push({id:d.id,...p});
+    const p = d.data();
+    if(!kategoriMap[p.kategori]) kategoriMap[p.kategori] = [];
+    kategoriMap[p.kategori].push({id:d.id, ...p});
   });
 
   Object.keys(kategoriMap).forEach(cat=>{
-    const section=document.createElement("details");
-    section.className="mb-6";
-    section.innerHTML=`<summary class="cursor-pointer font-bold text-xl text-pink-600 mb-4">${cat}</summary><div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>`;
-    const grid=section.querySelector("div");
+    const section = document.createElement("details");
+    section.className = "mb-6";
+    section.innerHTML = `<summary class="cursor-pointer font-bold text-xl text-pink-600 mb-4">${cat}</summary>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>`;
+    const grid = section.querySelector("div");
 
     kategoriMap[cat].forEach(p=>{
-      const card=document.createElement("div");
+      const card = document.createElement("div");
       card.className="bg-white rounded-2xl shadow p-4";
       card.innerHTML=`
         <div class="overflow-hidden rounded-xl mb-2 bg-pink-100">
@@ -175,7 +195,7 @@ async function loadProdukAdmin(){
       `;
 
       // HAPUS
-      card.querySelector(".hapusBtn").onclick=async()=>{
+      card.querySelector(".hapusBtn").onclick = async()=>{
         if(confirm("Hapus produk?")){
           await deleteDoc(doc(db,"produk",p.id));
           loadProdukAdmin();
@@ -183,7 +203,7 @@ async function loadProdukAdmin(){
       };
 
       // EDIT
-      card.querySelector(".editBtn").onclick=()=>{
+      card.querySelector(".editBtn").onclick = ()=>{
         editId = p.id;
         nama.value = p.nama;
         deskripsi.value = p.deskripsi;
@@ -194,7 +214,7 @@ async function loadProdukAdmin(){
       };
 
       // VIEW
-      card.querySelector(".viewBtn").onclick=()=>{
+      card.querySelector(".viewBtn").onclick = ()=>{
         window.open(p.link,"_blank");
       };
 
@@ -207,4 +227,3 @@ async function loadProdukAdmin(){
 </script>
 </body>
 </html>
-
