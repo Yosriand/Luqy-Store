@@ -29,7 +29,7 @@
 
     <button id="logoutBtn" class="mb-4 bg-rose-500 text-white px-4 py-2 rounded-full">Logout</button>
 
-    <!-- TAMBAH PRODUK -->
+    <!-- TAMBAH / EDIT PRODUK -->
     <div class="bg-white p-6 rounded-xl shadow mb-6">
       <h2 class="font-bold mb-4">Tambah / Edit Produk</h2>
       <input id="nama" placeholder="Nama Produk" class="w-full border p-2 rounded mb-2"/>
@@ -52,7 +52,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc, increment, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 /* FIREBASE CONFIG */
@@ -82,6 +82,8 @@ const link = document.getElementById("link");
 const gambar = document.getElementById("gambar");
 const kategori = document.getElementById("kategori");
 
+let editId = null; // Menyimpan ID produk yang sedang diedit
+
 /* LOGIN */
 loginBtn.onclick = () => {
   signInWithEmailAndPassword(auth,email.value,password.value)
@@ -106,22 +108,34 @@ onAuthStateChanged(auth,user=>{
   else{ loginBox.classList.remove("hidden"); dashboard.classList.add("hidden"); }
 });
 
-/* SIMPAN PRODUK */
+/* SIMPAN / EDIT PRODUK */
 simpanBtn.onclick = async()=>{
-  if(!nama.value||!link.value||!kategori.value){
+  if(!nama.value || !link.value || !kategori.value){
     alert("❌ Nama, Link & Kategori wajib diisi");
     return;
   }
+
+  const data = {
+    nama: nama.value,
+    deskripsi: deskripsi.value,
+    link: link.value,
+    gambar: gambar.value,
+    kategori: kategori.value,
+    klik: 0,
+    createdAt: serverTimestamp()
+  };
+
   try{
-    await addDoc(collection(db,"produk"),{
-      nama:nama.value,
-      deskripsi:deskripsi.value,
-      link:link.value,
-      gambar:gambar.value,
-      kategori:kategori.value,
-      klik:0,
-      createdAt:serverTimestamp()
-    });
+    if(editId){ 
+      // EDIT PRODUK
+      await updateDoc(doc(db,"produk",editId), data);
+      editId = null;
+      alert("✅ Produk berhasil diupdate");
+    }else{
+      // TAMBAH PRODUK BARU
+      await addDoc(collection(db,"produk"), data);
+      alert("✅ Produk berhasil disimpan");
+    }
     nama.value=deskripsi.value=link.value=kategori.value=gambar.value="";
     loadProdukAdmin();
   }catch(e){ alert("❌ Gagal simpan: "+e.message);}
@@ -143,6 +157,7 @@ async function loadProdukAdmin(){
     section.className="mb-6";
     section.innerHTML=`<summary class="cursor-pointer font-bold text-xl text-pink-600 mb-4">${cat}</summary><div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>`;
     const grid=section.querySelector("div");
+
     kategoriMap[cat].forEach(p=>{
       const card=document.createElement("div");
       card.className="bg-white rounded-2xl shadow p-4";
@@ -153,15 +168,29 @@ async function loadProdukAdmin(){
         <b>${p.nama}</b>
         <p class="text-sm text-gray-500 mb-2">${p.deskripsi||''}</p>
         <a href="${p.link}" target="_blank" class="block text-center bg-pink-400 hover:bg-pink-500 text-white py-1 rounded-full mb-2">Beli Sekarang</a>
-        <button class="hapusBtn bg-red-500 text-white px-2 py-1 rounded-full">Hapus</button>
+        <div class="flex gap-2">
+          <button class="editBtn bg-yellow-400 text-white px-2 py-1 rounded-full">Edit</button>
+          <button class="hapusBtn bg-red-500 text-white px-2 py-1 rounded-full">Hapus</button>
+        </div>
       `;
-      // Hapus
+      // HAPUS
       card.querySelector(".hapusBtn").onclick=async()=>{
         if(confirm("Hapus produk?")){
           await deleteDoc(doc(db,"produk",p.id));
           loadProdukAdmin();
         }
       };
+      // EDIT
+      card.querySelector(".editBtn").onclick=()=>{
+        editId = p.id;
+        nama.value = p.nama;
+        deskripsi.value = p.deskripsi;
+        link.value = p.link;
+        gambar.value = p.gambar;
+        kategori.value = p.kategori;
+        window.scrollTo({top:0, behavior:"smooth"});
+      };
+
       grid.appendChild(card);
     });
     produkList.appendChild(section);
