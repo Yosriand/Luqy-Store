@@ -58,6 +58,10 @@
       <textarea id="deskripsi" placeholder="Deskripsi"
         class="w-full border p-2 rounded mb-2"></textarea>
 
+      <!-- ✅ INPUT GAMBAR -->
+      <input id="gambar" placeholder="Link Gambar Produk (Shopee / Tokopedia)"
+        class="w-full border p-2 rounded mb-2">
+
       <input id="link" placeholder="Link Affiliate"
         class="w-full border p-2 rounded mb-2">
 
@@ -113,6 +117,7 @@ const password = document.getElementById("password");
 const nama = document.getElementById("nama");
 const deskripsi = document.getElementById("deskripsi");
 const link = document.getElementById("link");
+const gambar = document.getElementById("gambar");
 const kategori = document.getElementById("kategori");
 
 /* LOGIN */
@@ -154,9 +159,18 @@ async function loadProduk() {
   list.innerHTML = "";
   const snap = await getDocs(collection(db, "produk"));
   snap.forEach(d => {
+    const p = d.data();
     list.innerHTML += `
-      <div class="bg-white p-4 rounded-xl shadow mb-3 flex justify-between">
-        <b>${d.data().nama}</b>
+      <div class="bg-white p-4 rounded-xl shadow mb-3 flex items-center gap-4">
+        <img src="${p.gambar}"
+          class="w-16 h-16 object-cover rounded border"
+          onerror="this.src='https://via.placeholder.com/80'">
+
+        <div class="flex-1">
+          <b>${p.nama}</b>
+          <div class="text-xs text-gray-400">${p.kategori}</div>
+        </div>
+
         <button onclick="hapus('${d.id}')" class="text-red-500 text-sm">
           Hapus
         </button>
@@ -173,27 +187,30 @@ window.hapus = async id => {
 
 /* SIMPAN */
 simpanBtn.onclick = async () => {
-  if (!nama.value || !link.value || !kategori.value) {
-    alert("❌ Nama, Link & Kategori wajib diisi");
+  if (!nama.value || !link.value || !gambar.value || !kategori.value) {
+    alert("❌ Semua field wajib diisi");
     return;
   }
 
-  try {
-    await addDoc(collection(db, "produk"), {
-      nama: nama.value,
-      deskripsi: deskripsi.value,
-      link: link.value,
-      kategori: kategori.value,
-      klik: 0,
-      createdAt: serverTimestamp()
-    });
+  await addDoc(collection(db, "produk"), {
+    nama: nama.value,
+    deskripsi: deskripsi.value,
+    link: link.value,
+    gambar: gambar.value,
+    kategori: kategori.value,
+    klik: 0,
+    createdAt: serverTimestamp()
+  });
 
-    alert("✅ Produk berhasil disimpan");
-    nama.value = deskripsi.value = link.value = kategori.value = "";
-    loadProduk();
-  } catch (e) {
-    alert("❌ Gagal simpan: " + e.message);
-  }
+  alert("✅ Produk berhasil disimpan");
+
+  nama.value = "";
+  deskripsi.value = "";
+  link.value = "";
+  gambar.value = "";
+  kategori.value = "";
+
+  loadProduk();
 };
 </script>
 
