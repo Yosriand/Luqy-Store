@@ -2,208 +2,168 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Luqqy Store</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Luqqy Store</title>
+  <meta name="description" content="Luqqy Store - Rekomendasi produk affiliate terbaik">
+
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-pink-50 min-h-screen">
 
-<header class="bg-gradient-to-r from-pink-400 to-rose-500 text-white p-6 text-center shadow">
-  <h1 class="text-3xl font-extrabold">Admin Luqqy Store</h1>
+<!-- ================= HEADER ================= -->
+<header class="bg-gradient-to-r from-pink-400 to-rose-500 text-white p-6 shadow flex justify-between items-center">
+  <h1 class="text-3xl font-extrabold">Luqqy Store</h1>
+  <a href="admin.html"
+     class="bg-white text-pink-500 px-4 py-2 rounded-full text-sm font-semibold hover:bg-pink-100 transition">
+    🔐 Login Admin
+  </a>
 </header>
 
-<div class="max-w-4xl mx-auto p-6">
+<!-- ================= SEARCH & SORT ================= -->
+<div class="max-w-6xl mx-auto p-6">
+  <div class="flex flex-col md:flex-row gap-4 mb-6">
+    <input id="search"
+      placeholder="🔍 Cari produk favoritmu..."
+      class="flex-1 p-3 rounded-full border focus:outline-pink-300"/>
 
-  <!-- LOGIN -->
-  <div id="loginBox" class="bg-white p-6 rounded-xl shadow">
-    <h2 class="text-xl font-bold mb-4 text-pink-600">Login Admin</h2>
-
-    <input id="email" type="email" placeholder="Email"
-      class="w-full border p-2 rounded mb-2"/>
-
-    <input id="password" type="password" placeholder="Password"
-      class="w-full border p-2 rounded mb-4"/>
-
-    <button id="loginBtn"
-      class="w-full bg-pink-500 text-white p-2 rounded-full mb-2">
-      Login
-    </button>
-
-    <button id="resetBtn"
-      class="text-sm text-pink-500 underline w-full mb-2">
-      Lupa password?
-    </button>
-
-    <!-- ✅ KEMBALI KE VISITOR -->
-    <button id="backToVisitor"
-      class="w-full border border-pink-400 text-pink-500 p-2 rounded-full hover:bg-pink-50 transition">
-      ← Kembali ke Luqqy Store
-    </button>
+    <select id="sort" class="p-3 rounded-full border">
+      <option value="terbaru">🆕 Terbaru</option>
+      <option value="terlaris">🔥 Terlaris</option>
+    </select>
   </div>
 
-  <!-- DASHBOARD -->
-  <div id="dashboard" class="hidden">
-
-    <button id="logoutBtn"
-      class="mb-4 bg-rose-500 text-white px-4 py-2 rounded-full">
-      Logout
-    </button>
-
-    <div class="bg-white p-6 rounded-xl shadow mb-6">
-      <h2 class="font-bold mb-4">Tambah Produk</h2>
-
-      <input id="nama" placeholder="Nama Produk"
-        class="w-full border p-2 rounded mb-2">
-
-      <textarea id="deskripsi" placeholder="Deskripsi"
-        class="w-full border p-2 rounded mb-2"></textarea>
-
-      <input id="link" placeholder="Link Affiliate"
-        class="w-full border p-2 rounded mb-2">
-
-      <select id="kategori" class="w-full border p-2 rounded mb-4">
-        <option value="">Pilih Kategori</option>
-        <option value="skincare">💄 Skincare</option>
-        <option value="fashion">👜 Fashion</option>
-        <option value="home">🏠 Home & Living</option>
-      </select>
-
-      <button id="simpanBtn"
-        class="w-full bg-pink-500 text-white p-2 rounded-full">
-        Simpan Produk
-      </button>
-    </div>
-
-    <div id="list"></div>
-  </div>
+  <div id="produk"></div>
 </div>
 
-<!-- ================= JAVASCRIPT ================= -->
+<footer class="text-center text-sm text-pink-400 py-6">
+  © Luqqy Store
+</footer>
+
+<!-- ================= SCRIPT ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, getDocs,
-  deleteDoc, doc, serverTimestamp
+  getFirestore, collection, getDocs,
+  doc, updateDoc, increment,
+  query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {
-  getAuth, signInWithEmailAndPassword,
-  sendPasswordResetEmail, onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* 🔥 FIREBASE CONFIG */
+/* ================= FIREBASE CONFIG ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyAgvqSOqTr5zeGFArOWYSaUExCAlwEw2gE",
   authDomain: "luqqy-store.firebaseapp.com",
   projectId: "luqqy-store",
   storageBucket: "luqqy-store.firebasestorage.app",
   messagingSenderId: "157194853674",
-  appId: "1:157194853674:web:936fac43307d852fedd253",
-  measurementId: "G-934QRS9WKR"
+  appId: "1:157194853674:web:936fac43307d852fedd253"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
 
 /* ================= ELEMENT ================= */
-const loginBox = document.getElementById("loginBox");
-const dashboard = document.getElementById("dashboard");
-const list = document.getElementById("list");
+const produkEl = document.getElementById("produk");
+const searchEl = document.getElementById("search");
+const sortEl = document.getElementById("sort");
 
-const email = document.getElementById("email");
-const password = document.getElementById("password");
-const nama = document.getElementById("nama");
-const deskripsi = document.getElementById("deskripsi");
-const link = document.getElementById("link");
-const kategori = document.getElementById("kategori");
+let allProduk = [];
 
-/* ================= LOGIN ================= */
-document.getElementById("loginBtn").addEventListener("click", () => {
-  signInWithEmailAndPassword(auth, email.value, password.value)
-    .catch(err => {
-      if (err.code === "auth/wrong-password") alert("❌ Password salah");
-      else if (err.code === "auth/user-not-found") alert("❌ Email tidak terdaftar");
-      else if (err.code === "auth/invalid-email") alert("❌ Email tidak valid");
-      else alert("Login gagal: " + err.message);
-    });
-});
+/* ================= GAMBAR AFFILIATE ================= */
+function affiliateImage(url) {
+  return `https://api.microlink.io/?url=${encodeURIComponent(url)}&embed=image.url&meta=false&screenshot=false`;
+}
 
-/* ================= RESET PASSWORD ================= */
-document.getElementById("resetBtn").addEventListener("click", () => {
-  if (!email.value) return alert("Masukkan email dulu");
-  sendPasswordResetEmail(auth, email.value)
-    .then(() => alert("📧 Link reset password dikirim ke email"))
-    .catch(err => alert(err.message));
-});
-
-/* ================= BACK TO VISITOR ================= */
-document.getElementById("backToVisitor").addEventListener("click", () => {
-  window.location.href = "index.html";
-});
-
-/* ================= LOGOUT ================= */
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await signOut(auth);
-  window.location.href = "index.html";
-});
-
-/* ================= AUTH STATE ================= */
-onAuthStateChanged(auth, user => {
-  if (user) {
-    loginBox.classList.add("hidden");
-    dashboard.classList.remove("hidden");
-    loadProduk();
-  } else {
-    loginBox.classList.remove("hidden");
-    dashboard.classList.add("hidden");
-  }
-});
-
-/* ================= PRODUK ================= */
+/* ================= LOAD PRODUK ================= */
 async function loadProduk() {
-  const snap = await getDocs(collection(db, "produk"));
-  list.innerHTML = "";
+  const q =
+    sortEl.value === "terlaris"
+      ? query(collection(db, "produk"), orderBy("klik", "desc"))
+      : query(collection(db, "produk"), orderBy("createdAt", "desc"));
 
-  snap.forEach(d => {
-    const p = d.data();
-    list.innerHTML += `
-      <div class="bg-white p-4 rounded-xl shadow mb-3 flex justify-between">
-        <b>${p.nama}</b>
-        <button class="text-red-500 text-sm" data-id="${d.id}">
-          Hapus
-        </button>
-      </div>`;
+  const snap = await getDocs(q);
+  allProduk = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderProduk();
+}
+
+/* ================= RENDER ================= */
+function renderProduk() {
+  const keyword = searchEl.value.toLowerCase();
+
+  const kategoriMap = {
+    skincare: { title: "💄 Skincare Favorit", items: [] },
+    fashion: { title: "👜 Fashion Pilihan", items: [] },
+    home: { title: "🏠 Home & Living", items: [] }
+  };
+
+  allProduk
+    .filter(p => p.nama?.toLowerCase().includes(keyword))
+    .forEach(p => kategoriMap[p.kategori]?.items.push(p));
+
+  produkEl.innerHTML = "";
+
+  Object.values(kategoriMap).forEach(cat => {
+    if (!cat.items.length) return;
+
+    const section = document.createElement("section");
+    section.className = "mb-10";
+
+    section.innerHTML = `
+      <h2 class="font-bold text-xl text-pink-600 mb-4">${cat.title}</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"></div>
+    `;
+
+    const grid = section.querySelector("div");
+
+    cat.items.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "bg-white rounded-2xl shadow hover:shadow-lg transition p-4";
+
+      card.innerHTML = `
+        <div class="rounded-xl overflow-hidden mb-3 bg-pink-100">
+          <img src="${affiliateImage(p.link)}"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            onerror="this.src='https://via.placeholder.com/400x400/ffe4e6/ec4899?text=Luqqy+Store'"
+            class="w-full h-44 object-cover">
+        </div>
+
+        <h3 class="font-bold text-pink-700">${p.nama}</h3>
+        <p class="text-sm text-gray-500 mb-4">${p.deskripsi || ""}</p>
+
+        <a href="${p.link}" target="_blank"
+          data-id="${p.id}"
+          class="beli block text-center bg-pink-400 hover:bg-pink-500 text-white py-2 rounded-full font-semibold transition">
+          🛍️ Beli Sekarang
+        </a>
+      `;
+
+      grid.appendChild(card);
+    });
+
+    produkEl.appendChild(section);
   });
 
-  document.querySelectorAll("[data-id]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (confirm("Hapus produk?")) {
-        await deleteDoc(doc(db, "produk", btn.dataset.id));
-        loadProduk();
-      }
-    });
+  document.querySelectorAll(".beli").forEach(btn => {
+    btn.addEventListener("click", () => hitungKlik(btn.dataset.id));
   });
 }
 
-/* ================= SIMPAN ================= */
-document.getElementById("simpanBtn").addEventListener("click", async () => {
-  await addDoc(collection(db, "produk"), {
-    nama: nama.value,
-    deskripsi: deskripsi.value,
-    link: link.value,
-    kategori: kategori.value,
-    klik: 0,
-    createdAt: serverTimestamp()
-  });
+/* ================= KLIK ================= */
+async function hitungKlik(id) {
+  try {
+    await updateDoc(doc(db, "produk", id), { klik: increment(1) });
+  } catch (e) {
+    console.warn("Klik gagal dicatat");
+  }
+}
 
-  nama.value = "";
-  deskripsi.value = "";
-  link.value = "";
-  kategori.value = "";
+/* ================= EVENT ================= */
+searchEl.addEventListener("input", renderProduk);
+sortEl.addEventListener("change", loadProduk);
 
-  loadProduk();
-});
+/* ================= INIT ================= */
+loadProduk();
 </script>
 
 </body>
