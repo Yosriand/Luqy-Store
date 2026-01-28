@@ -49,39 +49,53 @@
       Logout
     </button>
 
+    <!-- FORM PRODUK -->
     <div class="bg-white p-6 rounded-xl shadow mb-6">
-      <h2 class="font-bold mb-4">Tambah Produk</h2>
+      <h2 class="font-bold mb-4 text-lg">Tambah Produk</h2>
 
-      <input id="nama" placeholder="Nama Produk"
-        class="w-full border p-2 rounded mb-2">
+      <!-- WARNING -->
+      <div id="warning"
+        class="hidden mb-4 bg-red-100 text-red-600 p-3 rounded-lg text-sm">
+        ❌ Semua field bertanda <b>*</b> wajib diisi
+      </div>
 
-      <textarea id="deskripsi" placeholder="Deskripsi"
-        class="w-full border p-2 rounded mb-2"></textarea>
+      <label class="block font-semibold mb-1">
+        Nama Produk <span class="text-red-500">*</span>
+      </label>
+      <input id="nama" class="w-full border p-2 rounded mb-3">
 
-      <!-- ✅ INPUT GAMBAR -->
-      <input id="gambar" placeholder="Link Gambar Produk (Shopee / Tokopedia)"
-        class="w-full border p-2 rounded mb-2">
+      <label class="block font-semibold mb-1">
+        Deskripsi Produk <span class="text-red-500">*</span>
+      </label>
+      <textarea id="deskripsi" class="w-full border p-2 rounded mb-3"></textarea>
 
-      <input id="link" placeholder="Link Affiliate"
-        class="w-full border p-2 rounded mb-2">
+      <label class="block font-semibold mb-1">
+        Link Affiliate <span class="text-red-500">*</span>
+      </label>
+      <input id="link" class="w-full border p-2 rounded mb-3">
 
+      <label class="block font-semibold mb-1">
+        Kategori <span class="text-red-500">*</span>
+      </label>
       <select id="kategori" class="w-full border p-2 rounded mb-4">
-        <option value="">Pilih Kategori</option>
+        <option value="">-- Pilih Kategori --</option>
         <option value="skincare">💄 Skincare</option>
         <option value="fashion">👜 Fashion</option>
         <option value="home">🏠 Home & Living</option>
       </select>
 
       <button id="simpanBtn"
-        class="w-full bg-pink-500 text-white p-2 rounded-full">
+        class="w-full bg-pink-500 hover:bg-pink-600 text-white p-2 rounded-full font-semibold">
         Simpan Produk
       </button>
     </div>
 
+    <!-- LIST -->
     <div id="list"></div>
   </div>
 </div>
 
+<!-- ================= SCRIPT ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -111,13 +125,13 @@ const auth = getAuth(app);
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
 const list = document.getElementById("list");
+const warning = document.getElementById("warning");
 
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const nama = document.getElementById("nama");
 const deskripsi = document.getElementById("deskripsi");
 const link = document.getElementById("link");
-const gambar = document.getElementById("gambar");
 const kategori = document.getElementById("kategori");
 
 /* LOGIN */
@@ -159,18 +173,9 @@ async function loadProduk() {
   list.innerHTML = "";
   const snap = await getDocs(collection(db, "produk"));
   snap.forEach(d => {
-    const p = d.data();
     list.innerHTML += `
-      <div class="bg-white p-4 rounded-xl shadow mb-3 flex items-center gap-4">
-        <img src="${p.gambar}"
-          class="w-16 h-16 object-cover rounded border"
-          onerror="this.src='https://via.placeholder.com/80'">
-
-        <div class="flex-1">
-          <b>${p.nama}</b>
-          <div class="text-xs text-gray-400">${p.kategori}</div>
-        </div>
-
+      <div class="bg-white p-4 rounded-xl shadow mb-3 flex justify-between">
+        <b>${d.data().nama}</b>
         <button onclick="hapus('${d.id}')" class="text-red-500 text-sm">
           Hapus
         </button>
@@ -185,32 +190,12 @@ window.hapus = async id => {
   }
 };
 
-/* SIMPAN */
-/* SIMPAN */
+/* SIMPAN (MANDATORY CHECK) */
 simpanBtn.onclick = async () => {
+  warning.classList.add("hidden");
 
-  if (!nama.value.trim()) {
-    alert("❌ Nama produk wajib diisi");
-    return;
-  }
-
-  if (!deskripsi.value.trim()) {
-    alert("❌ Deskripsi produk wajib diisi");
-    return;
-  }
-
-  if (!link.value.trim()) {
-    alert("❌ Link produk wajib diisi");
-    return;
-  }
-
-  if (!gambar.value.trim()) {
-    alert("❌ Link gambar wajib diisi");
-    return;
-  }
-
-  if (!kategori.value) {
-    alert("❌ Kategori wajib dipilih");
+  if (!nama.value || !deskripsi.value || !link.value || !kategori.value) {
+    warning.classList.remove("hidden");
     return;
   }
 
@@ -218,23 +203,14 @@ simpanBtn.onclick = async () => {
     nama: nama.value.trim(),
     deskripsi: deskripsi.value.trim(),
     link: link.value.trim(),
-    gambar: gambar.value.trim(),
     kategori: kategori.value,
     klik: 0,
     createdAt: serverTimestamp()
   });
 
-  alert("✅ Produk berhasil disimpan");
-
-  nama.value = "";
-  deskripsi.value = "";
-  link.value = "";
-  gambar.value = "";
-  kategori.value = "";
-
+  nama.value = deskripsi.value = link.value = kategori.value = "";
   loadProduk();
 };
-
 </script>
 
 </body>
