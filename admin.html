@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Luqqy Store</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Luqqy Store</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-
 <body class="bg-pink-50 min-h-screen">
 
 <header class="bg-gradient-to-r from-pink-400 to-rose-500 text-white p-6 text-center shadow">
-  <h1 class="text-3xl font-extrabold">Admin Luqqy Store</h1>
+<h1 class="text-3xl font-extrabold">Admin Luqqy Store</h1>
 </header>
 
 <div class="max-w-4xl mx-auto p-6">
@@ -19,8 +18,11 @@
   <div id="loginBox" class="bg-white p-6 rounded-xl shadow">
     <h2 class="text-xl font-bold mb-4 text-pink-600">Login Admin</h2>
 
-    <input id="email" type="email" placeholder="Email" class="w-full border p-2 rounded mb-2"/>
-    <input id="password" type="password" placeholder="Password" class="w-full border p-2 rounded mb-4"/>
+    <input id="email" type="email" placeholder="Email"
+      class="w-full border p-2 rounded mb-2"/>
+    <input id="password" type="password" placeholder="Password"
+      class="w-full border p-2 rounded mb-4"/>
+
     <button id="loginBtn" class="w-full bg-pink-500 text-white p-2 rounded-full mb-2">Login</button>
     <button id="resetBtn" class="text-sm text-pink-500 underline w-full mb-2">Lupa password?</button>
     <button id="backToVisitor" class="w-full border border-pink-400 text-pink-500 p-2 rounded-full hover:bg-pink-50">
@@ -31,52 +33,25 @@
   <!-- DASHBOARD -->
   <div id="dashboard" class="hidden">
 
-    <div class="flex justify-between items-center mb-4">
-      <button id="logoutBtn" class="bg-rose-500 text-white px-4 py-2 rounded-full">Logout</button>
-      <div class="text-sm text-pink-600 font-semibold">
-        📦 Produk: <span id="totalProduk">0</span> |
-        🖱️ Klik: <span id="totalKlik">0</span>
-      </div>
-    </div>
+    <button id="logoutBtn" class="mb-4 bg-rose-500 text-white px-4 py-2 rounded-full">Logout</button>
 
-    <!-- FORM -->
     <div class="bg-white p-6 rounded-xl shadow mb-6">
-      <h2 class="font-bold mb-4 text-lg">Tambah / Edit Produk</h2>
+      <h2 class="font-bold mb-4">Tambah Produk</h2>
 
-      <div id="warning" class="hidden mb-4 bg-red-100 text-red-600 p-3 rounded-lg text-sm">
-        ❌ Semua field bertanda * wajib diisi
-      </div>
+      <input id="nama" placeholder="Nama Produk *" class="w-full border p-2 rounded mb-2"/>
+      <textarea id="deskripsi" placeholder="Deskripsi *" class="w-full border p-2 rounded mb-2"></textarea>
+      <input id="link" placeholder="Link Affiliate *" class="w-full border p-2 rounded mb-2"/>
+      <input id="gambar" placeholder="URL Gambar (Opsional)" class="w-full border p-2 rounded mb-2"/>
 
-      <label class="font-semibold">Nama Produk <span class="text-red-500">*</span></label>
-      <input id="nama" class="w-full border p-2 rounded mb-3"/>
-
-      <label class="font-semibold">Deskripsi <span class="text-red-500">*</span></label>
-      <textarea id="deskripsi" class="w-full border p-2 rounded mb-3"></textarea>
-
-      <label class="font-semibold">Link Affiliate <span class="text-red-500">*</span></label>
-      <input id="link" class="w-full border p-2 rounded mb-3"/>
-
-      <!-- PREVIEW GAMBAR -->
-      <div id="previewBox" class="hidden mb-3">
-        <p class="text-sm text-pink-500 mb-1">Preview Gambar:</p>
-        <img id="previewImg" class="w-full h-40 object-cover rounded-xl border"/>
-      </div>
-
-      <label class="font-semibold">Kategori <span class="text-red-500">*</span></label>
       <select id="kategori" class="w-full border p-2 rounded mb-4">
-        <option value="">-- Pilih --</option>
+        <option value="">Pilih Kategori *</option>
         <option value="skincare">💄 Skincare</option>
         <option value="fashion">👜 Fashion</option>
         <option value="home">🏠 Home & Living</option>
       </select>
 
-      <button id="simpanBtn" class="w-full bg-pink-500 hover:bg-pink-600 text-white p-2 rounded-full font-semibold">
-        Simpan Produk
-      </button>
+      <button id="simpanBtn" class="w-full bg-pink-500 text-white p-2 rounded-full">Simpan Produk</button>
     </div>
-
-    <!-- SEARCH -->
-    <input id="searchProduk" placeholder="🔍 Cari produk..." class="w-full p-3 rounded-full border mb-4">
 
     <div id="list"></div>
   </div>
@@ -84,10 +59,10 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* FIREBASE */
+/* Firebase Config */
 const firebaseConfig = {
   apiKey: "AIzaSyAgvqSOqTr5zeGFArOWYSaUExCAlwEw2gE",
   authDomain: "luqqy-store.firebaseapp.com",
@@ -96,126 +71,104 @@ const firebaseConfig = {
   messagingSenderId: "157194853674",
   appId: "1:157194853674:web:936fac43307d852fedd253"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-/* ELEMENT */
+/* Elements */
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
 const list = document.getElementById("list");
-const warning = document.getElementById("warning");
-const totalProduk = document.getElementById("totalProduk");
-const totalKlik = document.getElementById("totalKlik");
 
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const nama = document.getElementById("nama");
 const deskripsi = document.getElementById("deskripsi");
 const link = document.getElementById("link");
+const gambar = document.getElementById("gambar");
 const kategori = document.getElementById("kategori");
 
-const previewBox = document.getElementById("previewBox");
-const previewImg = document.getElementById("previewImg");
-const searchProduk = document.getElementById("searchProduk");
-
-let editId = null;
-let allProduk = [];
-
-/* PREVIEW IMAGE */
-link.addEventListener("input", () => {
-  if (!link.value.startsWith("http")) { previewBox.classList.add("hidden"); return; }
-  previewImg.src = `https://api.microlink.io/?url=${encodeURIComponent(link.value)}&embed=image.url`;
-  previewBox.classList.remove("hidden");
-});
-
 /* LOGIN */
-loginBtn.onclick = () => signInWithEmailAndPassword(auth, email.value, password.value);
+loginBtn.onclick = () => {
+  signInWithEmailAndPassword(auth, email.value, password.value)
+    .catch(err => alert("Login gagal: " + err.message));
+};
 
 /* RESET */
-resetBtn.onclick = () => email.value && sendPasswordResetEmail(auth, email.value);
+resetBtn.onclick = () => {
+  if (!email.value) return alert("Masukkan email");
+  sendPasswordResetEmail(auth, email.value)
+    .then(() => alert("📧 Email reset terkirim"));
+};
 
-/* NAV */
+/* BACK */
 backToVisitor.onclick = () => location.href = "index.html";
-logoutBtn.onclick = async () => { await signOut(auth); location.href = "index.html"; };
 
-/* AUTH */
+/* LOGOUT */
+logoutBtn.onclick = async () => {
+  await signOut(auth);
+  location.href = "index.html";
+};
+
+/* AUTH STATE */
 onAuthStateChanged(auth, user => {
-  if (user) { loginBox.classList.add("hidden"); dashboard.classList.remove("hidden"); loadProduk(); }
+  if (user) {
+    loginBox.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+    loadProduk();
+  } else {
+    loginBox.classList.remove("hidden");
+    dashboard.classList.add("hidden");
+  }
 });
 
-/* LOAD & RENDER */
+/* LOAD PRODUK */
 async function loadProduk() {
-  const snap = await getDocs(collection(db, "produk"));
-  allProduk = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderList();
-}
-
-/* RENDER LIST */
-function renderList() {
-  const keyword = searchProduk.value.toLowerCase();
-  let klikTotal = 0;
-
   list.innerHTML = "";
-  allProduk.filter(p => p.nama.toLowerCase().includes(keyword)).forEach(p => {
-    klikTotal += p.klik || 0;
-    const div = document.createElement("div");
-    div.className = "bg-white p-4 rounded-xl shadow mb-3 flex justify-between items-center";
-
-    div.innerHTML = `
-      <span>${p.nama}</span>
-      <div class="flex gap-2">
-        <button class="text-blue-500 text-sm editBtn">Edit</button>
-        <button class="text-red-500 text-sm deleteBtn">Hapus</button>
-      </div>
-    `;
-    const editBtn = div.querySelector(".editBtn");
-    editBtn.onclick = () => {
-      editId = p.id;
-      nama.value = p.nama;
-      deskripsi.value = p.deskripsi;
-      link.value = p.link;
-      kategori.value = p.kategori;
-      previewImg.src = `https://api.microlink.io/?url=${encodeURIComponent(link.value)}&embed=image.url`;
-      previewBox.classList.remove("hidden");
-    };
-
-    const deleteBtn = div.querySelector(".deleteBtn");
-    deleteBtn.onclick = async () => { if(confirm("Hapus produk?")) { await deleteDoc(doc(db,"produk",p.id)); editId=null; loadProduk(); } };
-
-    list.appendChild(div);
+  const snap = await getDocs(collection(db, "produk"));
+  snap.forEach(d => {
+    const p = d.data();
+    list.innerHTML += `
+      <div class="bg-white p-4 rounded-xl shadow mb-3 flex justify-between">
+        <b>${p.nama}</b>
+        <button onclick="hapus('${d.id}')" class="text-red-500 text-sm">Hapus</button>
+      </div>`;
   });
-
-  totalProduk.textContent = allProduk.length;
-  totalKlik.textContent = klikTotal;
 }
 
-/* SEARCH EVENT */
-searchProduk.addEventListener("input", renderList);
+window.hapus = async id => {
+  if (confirm("Hapus produk?")) {
+    await deleteDoc(doc(db, "produk", id));
+    loadProduk();
+  }
+};
 
-/* SIMPAN / UPDATE */
+/* SIMPAN PRODUK */
 simpanBtn.onclick = async () => {
-  warning.classList.add("hidden");
-
   if (!nama.value || !deskripsi.value || !link.value || !kategori.value) {
-    warning.classList.remove("hidden");
+    alert("❌ Nama, Deskripsi, Link, dan Kategori wajib diisi");
     return;
   }
 
-  const data = { nama: nama.value.trim(), deskripsi: deskripsi.value.trim(), link: link.value.trim(), kategori: kategori.value, klik: 0, createdAt: serverTimestamp() };
+  try {
+    await addDoc(collection(db, "produk"), {
+      nama: nama.value,
+      deskripsi: deskripsi.value,
+      link: link.value,
+      gambar: gambar.value || "",
+      kategori: kategori.value,
+      klik: 0,
+      createdAt: serverTimestamp()
+    });
 
-  if (editId) {
-    await updateDoc(doc(db, "produk", editId), data);
-    editId = null;
-  } else {
-    await addDoc(collection(db, "produk"), data);
+    alert("✅ Produk berhasil disimpan");
+    nama.value = deskripsi.value = link.value = gambar.value = kategori.value = "";
+    loadProduk();
+  } catch (e) {
+    alert("❌ Gagal simpan: " + e.message);
   }
-
-  nama.value = deskripsi.value = link.value = kategori.value = "";
-  previewBox.classList.add("hidden");
-  loadProduk();
 };
 </script>
-
 </body>
 </html>
