@@ -165,8 +165,8 @@ async function loadProdukAdmin(){
         </div>
         <b>${p.nama}</b>
         <p class="text-sm text-gray-500 mb-2">${p.deskripsi||''}</p>
-        <a href="${p.link}" target="_blank" class="text-blue-600 underline text-sm mb-2 block">Link Beli</a>
         <div class="flex justify-between mt-2">
+          <button class="viewBtn bg-blue-500 text-white px-3 py-1 rounded-full hover:bg-blue-600 transition">View</button>
           <button class="editBtn bg-yellow-400 text-white px-3 py-1 rounded-full hover:bg-yellow-500 transition">Edit</button>
           <button class="hapusBtn bg-red-500 text-white px-3 py-1 rounded-full hover:bg-red-600 transition">Hapus</button>
         </div>
@@ -189,6 +189,11 @@ async function loadProdukAdmin(){
         gambar.value = p.gambar;
         kategori.value = p.kategori;
         window.scrollTo({top:0, behavior:"smooth"});
+      };
+
+      // VIEW
+      card.querySelector(".viewBtn").onclick=()=>{
+        window.open(p.link,"_blank");
       };
 
       grid.appendChild(card);
