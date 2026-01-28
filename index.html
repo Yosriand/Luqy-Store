@@ -3,22 +3,18 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>luqy Store</title>
-<meta name="description" content="luqy Store - Rekomendasi produk affiliate terbaik">
-
+<title>Luqy Store</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-pink-50 min-h-screen">
 
-<!-- HEADER -->
 <header class="bg-gradient-to-r from-pink-400 to-rose-500 text-white p-6 shadow flex justify-between items-center">
-  <h1 class="text-3xl font-extrabold">luqy Store</h1>
+  <h1 class="text-3xl font-extrabold">Luqy Store</h1>
   <a href="admin.html" class="bg-white text-pink-500 px-4 py-2 rounded-full text-sm font-semibold hover:bg-pink-100 transition">
     🔐 Login Admin
   </a>
 </header>
 
-<!-- SEARCH & SORT -->
 <div class="max-w-6xl mx-auto p-6">
   <div class="flex flex-col md:flex-row gap-4 mb-6">
     <input id="search" placeholder="🔍 Cari produk favoritmu..." class="flex-1 p-3 rounded-full border focus:outline-pink-300"/>
@@ -31,118 +27,73 @@
   <div id="produk"></div>
 </div>
 
-<footer class="text-center text-sm text-pink-400 py-6">
-  © luqy Store
-</footer>
+<footer class="text-center text-sm text-pink-400 py-6">© Luqy Store</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* FIREBASE CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyAgvqSOqTr5zeGFArOWYSaUExCAlwEw2gE",
   authDomain: "luqqy-store.firebaseapp.com",
   projectId: "luqqy-store",
-  storageBucket: "luqqy-store.firebasestorage.app",
+  storageBucket: "luqqy-store.appspot.com",
   messagingSenderId: "157194853674",
-  appId: "1:157194853674:web:936fac43307d852fedd253",
-  measurementId: "G-934QRS9WKR"
+  appId: "1:157194853674:web:936fac43307d852fedd253"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ELEMENT */
 const produkEl = document.getElementById("produk");
 const searchEl = document.getElementById("search");
 const sortEl = document.getElementById("sort");
-
 let allProduk = [];
 
-/* LOAD PRODUK */
-async function loadProduk() {
-  const q = sortEl.value === "terlaris"
-    ? query(collection(db, "produk"), orderBy("klik","desc"))
-    : query(collection(db, "produk"), orderBy("createdAt","desc"));
+async function loadProduk(){
+  const q = sortEl.value==="terlaris"
+    ? query(collection(db,"produk"), orderBy("klik","desc"))
+    : query(collection(db,"produk"), orderBy("createdAt","desc"));
 
   const snap = await getDocs(q);
-  allProduk = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  allProduk = snap.docs.map(d=>({id:d.id,...d.data()}));
   renderProduk();
 }
 
-/* RENDER PRODUK PER KATEGORI */
-function renderProduk() {
+function renderProduk(){
   const keyword = searchEl.value.toLowerCase();
-
-  const kategoriMap = {
-    skincare: { title: "💄 Skincare Favorit", items: [] },
-    fashion: { title: "👜 Fashion Pilihan", items: [] },
-    home: { title: "🏠 Home & Living", items: [] }
-  };
-
-  allProduk
-    .filter(p => p.nama?.toLowerCase().includes(keyword))
-    .forEach(p => kategoriMap[p.kategori]?.items.push(p));
-
-  produkEl.innerHTML = "";
-
-  Object.values(kategoriMap).forEach(cat => {
+  const kategoriMap = { skincare:{title:"💄 Skincare", items:[]}, fashion:{title:"👜 Fashion", items:[]}, home:{title:"🏠 Home & Living", items:[]} };
+  allProduk.filter(p=>p.nama?.toLowerCase().includes(keyword)).forEach(p=>kategoriMap[p.kategori]?.items.push(p));
+  produkEl.innerHTML="";
+  Object.values(kategoriMap).forEach(cat=>{
     if(!cat.items.length) return;
-
-    const section = document.createElement("details");
-    section.className = "mb-8";
-    section.innerHTML = `
-      <summary class="cursor-pointer font-bold text-xl text-pink-600 mb-4">${cat.title}</summary>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"></div>
-    `;
-    const grid = section.querySelector("div");
-
-    cat.items.forEach(p => {
-      const card = document.createElement("div");
-      card.className = "bg-white rounded-2xl shadow hover:shadow-lg transition p-4";
-
-      card.innerHTML = `
+    const section=document.createElement("details"); section.className="mb-8"; section.innerHTML=`<summary class="cursor-pointer font-bold text-xl text-pink-600 mb-4">${cat.title}</summary><div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"></div>`;
+    const grid=section.querySelector("div");
+    cat.items.forEach(p=>{
+      const card=document.createElement("div");
+      card.className="bg-white rounded-2xl shadow hover:shadow-lg transition p-4";
+      card.innerHTML=`
         <div class="overflow-hidden rounded-xl mb-3 bg-pink-100">
-          <img src="${p.gambar || 'https://via.placeholder.com/400x400?text=luqy+Store'}"
-            loading="lazy"
-            referrerpolicy="no-referrer"
-            class="w-full h-44 object-cover"/>
+          <img src="${p.gambar||'https://via.placeholder.com/400x400?text=Luqy+Store'}" class="w-full h-44 object-cover"/>
         </div>
-
         <h3 class="font-bold text-pink-700">${p.nama}</h3>
-        <p class="text-sm text-gray-500 mb-4">${p.deskripsi || ""}</p>
-
-        <a href="${p.link}" target="_blank"
-          data-id="${p.id}"
-          class="beli block text-center bg-pink-400 hover:bg-pink-500 text-white py-2 rounded-full font-semibold transition">
-          🛍️ Beli Sekarang
-        </a>
+        <p class="text-sm text-gray-500 mb-2">${p.deskripsi||''}</p>
+        <p class="text-xs text-gray-400 mb-2">Klik: ${p.klik||0}</p>
+        <a href="${p.link}" target="_blank" class="block text-center bg-pink-400 hover:bg-pink-500 text-white py-2 rounded-full font-semibold transition">🛍️ Beli Sekarang</a>
       `;
-
+      card.querySelector("a").onclick=async()=>{
+        try{ await updateDoc(doc(db,"produk",p.id),{klik:increment(1)});}catch(e){console.warn(e);}
+      };
       grid.appendChild(card);
     });
-
     produkEl.appendChild(section);
-  });
-
-  /* HITUNG KLIK */
-  document.querySelectorAll(".beli").forEach(btn => {
-    btn.onclick = async () => {
-      try {
-        await updateDoc(doc(db,"produk",btn.dataset.id), { klik: increment(1) });
-      } catch(e){ console.warn("Gagal update klik", e); }
-    };
   });
 }
 
-/* EVENT SEARCH & SORT */
-searchEl.addEventListener("input", renderProduk);
-sortEl.addEventListener("change", loadProduk);
+searchEl.addEventListener("input",renderProduk);
+sortEl.addEventListener("change",loadProduk);
 
-/* INIT */
 loadProduk();
 </script>
-
 </body>
 </html>
