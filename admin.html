@@ -51,14 +51,14 @@
   Logout
 </button>
 
-<!-- FORM PRODUK -->
+<!-- FORM -->
 <div class="bg-white p-6 rounded-2xl shadow mb-8">
   <h2 class="text-lg font-bold mb-4 text-pink-600">Tambah / Edit Produk</h2>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
     <input id="nama" placeholder="Nama Produk *" class="border p-2 rounded"/>
     <input id="link" placeholder="Link Affiliate *" class="border p-2 rounded"/>
-    <input id="gambar" placeholder="URL Gambar" class="border p-2 rounded"/>
+    <input id="gambar" placeholder="URL Gambar (opsional)" class="border p-2 rounded"/>
     <select id="kategori" class="border p-2 rounded">
       <option value="">Kategori *</option>
       <option value="skincare">Skincare</option>
@@ -76,8 +76,10 @@
   </button>
 </div>
 
-<!-- PRODUK LIST -->
-<div id="produkList"></div>
+<!-- PREVIEW PRODUK -->
+<h2 class="text-xl font-bold text-pink-600 mb-4">📦 Produk Terdaftar</h2>
+<div id="produkList"
+  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"></div>
 
 </div>
 
@@ -102,11 +104,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-
-/* ELEMENT */
-const loginBox = document.getElementById("loginBox");
-const dashboard = document.getElementById("dashboard");
-const produkList = document.getElementById("produkList");
 
 let editId = null;
 
@@ -133,7 +130,7 @@ onAuthStateChanged(auth,user=>{
 /* SIMPAN */
 simpanBtn.onclick = async()=>{
   if(!nama.value || !link.value || !kategori.value){
-    return alert("Field wajib belum diisi");
+    return alert("❌ Field wajib belum diisi");
   }
 
   const data = {
@@ -159,7 +156,7 @@ simpanBtn.onclick = async()=>{
   loadProduk();
 };
 
-/* LOAD */
+/* LOAD + PREVIEW */
 async function loadProduk(){
   produkList.innerHTML="";
   const snap = await getDocs(collection(db,"produk"));
@@ -168,16 +165,27 @@ async function loadProduk(){
     const p=d.data();
     const card=document.createElement("div");
 
-    card.className="bg-white rounded-2xl shadow p-4 mb-4";
+    card.className="bg-white rounded-2xl shadow hover:shadow-lg transition p-4";
     card.innerHTML=`
-      <b>${p.nama}</b>
-      <p class="text-sm text-gray-500">${p.deskripsi||''}</p>
-      <p class="text-xs text-gray-400 mt-1">👁 ${p.klik||0} klik</p>
-      <div class="flex gap-2 mt-2">
-        <button class="edit bg-yellow-400 px-3 py-1 rounded-full text-white">Edit</button>
-        <button class="hapus bg-red-500 px-3 py-1 rounded-full text-white">Hapus</button>
+      <div class="overflow-hidden rounded-xl mb-3 bg-pink-100">
+        <img src="${p.gambar || 'https://via.placeholder.com/400x400?text=Luqy+Store'}"
+          class="w-full h-44 object-cover"/>
+      </div>
+
+      <h3 class="font-bold text-pink-700">${p.nama}</h3>
+      <p class="text-sm text-gray-500 mb-2">${p.deskripsi || ""}</p>
+      <p class="text-xs text-gray-400 mb-3">👁 ${p.klik || 0} klik</p>
+
+      <div class="flex gap-2 flex-wrap">
+        <button class="view bg-blue-500 text-white px-3 py-1 rounded-full text-sm">View</button>
+        <button class="edit bg-yellow-400 text-white px-3 py-1 rounded-full text-sm">Edit</button>
+        <button class="hapus bg-red-500 text-white px-3 py-1 rounded-full text-sm">Hapus</button>
       </div>
     `;
+
+    card.querySelector(".view").onclick=()=>{
+      window.open(p.link,"_blank");
+    };
 
     card.querySelector(".edit").onclick=()=>{
       editId=d.id;
