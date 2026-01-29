@@ -9,7 +9,6 @@
 
 <body class="bg-pink-50 min-h-screen">
 
-<!-- HEADER -->
 <header class="sticky top-0 z-50 bg-gradient-to-r from-pink-400 to-rose-500 text-white shadow">
   <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
     <h1 class="text-xl sm:text-2xl font-extrabold">🔐 Admin Luqy Store</h1>
@@ -22,7 +21,6 @@
 
 <div class="max-w-6xl mx-auto px-4 py-8">
 
-<!-- LOGIN -->
 <div id="loginBox" class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow">
   <h2 class="text-xl font-bold text-pink-600 mb-4 text-center">Login Admin</h2>
 
@@ -43,7 +41,6 @@
   </button>
 </div>
 
-<!-- DASHBOARD -->
 <div id="dashboard" class="hidden">
 
 <button id="logoutBtn"
@@ -51,14 +48,13 @@
   Logout
 </button>
 
-<!-- FORM -->
 <div class="bg-white p-6 rounded-2xl shadow mb-8">
   <h2 class="text-lg font-bold mb-4 text-pink-600">Tambah / Edit Produk</h2>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
     <input id="nama" placeholder="Nama Produk *" class="border p-2 rounded"/>
     <input id="link" placeholder="Link Affiliate *" class="border p-2 rounded"/>
-    <input id="gambar" placeholder="URL Gambar (opsional)" class="border p-2 rounded"/>
+    <input id="gambar" placeholder="URL Gambar (otomatis)" class="border p-2 rounded" readonly/>
     <select id="kategori" class="border p-2 rounded">
       <option value="">Kategori *</option>
       <option value="skincare">Skincare</option>
@@ -76,21 +72,12 @@
   </button>
 </div>
 
-<!-- SEARCH -->
-<div class="mb-4">
-  <input id="searchInput"
-    placeholder="🔍 Cari produk (nama / kategori)..."
-    class="w-full md:w-1/2 border p-2 rounded-full shadow"/>
-</div>
-
-<!-- PREVIEW PRODUK -->
 <h2 class="text-xl font-bold text-pink-600 mb-4">📦 Produk Terdaftar</h2>
 <div id="produkList"
   class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"></div>
 
 </div>
 
-<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } 
@@ -98,7 +85,6 @@ from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged }
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyAgvqSOqTr5zeGFArOWYSaUExCAlwEw2gE",
   authDomain: "luqqy-store.firebaseapp.com",
@@ -113,20 +99,31 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 let editId = null;
-let semuaProduk = [];
+
+/* 🔍 AUTO AMBIL GAMBAR DARI LINK */
+link.addEventListener("blur", async()=>{
+  if(!link.value) return;
+
+  try{
+    const res = await fetch(
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(link.value)
+    );
+    const html = await res.text();
+    const docu = new DOMParser().parseFromString(html,"text/html");
+    const og = docu.querySelector('meta[property="og:image"]');
+
+    if(og && og.content){
+      gambar.value = og.content;
+    }
+  }catch(e){
+    console.warn("Gagal ambil gambar");
+  }
+});
 
 /* LOGIN */
-loginBtn.onclick = ()=> {
-  signInWithEmailAndPassword(auth,email.value,password.value)
-    .catch(e=>alert(e.message));
-};
-
-resetBtn.onclick = ()=>{
-  if(!email.value) return alert("Masukkan email");
-  sendPasswordResetEmail(auth,email.value);
-};
-
-logoutBtn.onclick = ()=> signOut(auth);
+loginBtn.onclick = ()=>signInWithEmailAndPassword(auth,email.value,password.value);
+resetBtn.onclick = ()=>sendPasswordResetEmail(auth,email.value);
+logoutBtn.onclick = ()=>signOut(auth);
 
 /* AUTH */
 onAuthStateChanged(auth,user=>{
@@ -147,8 +144,8 @@ simpanBtn.onclick = async()=>{
     link:link.value,
     gambar:gambar.value,
     kategori:kategori.value,
-    klik: 0,
-    createdAt: serverTimestamp()
+    klik:0,
+    createdAt:serverTimestamp()
   };
 
   if(editId){
@@ -167,73 +164,22 @@ simpanBtn.onclick = async()=>{
 /* LOAD */
 async function loadProduk(){
   produkList.innerHTML="";
-  semuaProduk=[];
   const snap = await getDocs(collection(db,"produk"));
 
   snap.forEach(d=>{
-    semuaProduk.push({ id:d.id, ...d.data() });
-  });
-
-  renderProduk(semuaProduk);
-}
-
-/* RENDER */
-function renderProduk(data){
-  produkList.innerHTML="";
-
-  data.forEach(p=>{
+    const p=d.data();
     const card=document.createElement("div");
-    card.className="bg-white rounded-2xl shadow hover:shadow-lg transition p-4";
 
+    card.className="bg-white rounded-2xl shadow p-4";
     card.innerHTML=`
-      <div class="overflow-hidden rounded-xl mb-3 bg-pink-100">
-        <img src="${p.gambar || 'https://via.placeholder.com/400x400?text=Luqy+Store'}"
-          class="w-full h-44 object-cover"/>
-      </div>
-
-      <h3 class="font-bold text-pink-700">${p.nama}</h3>
-      <p class="text-sm text-gray-500 mb-2">${p.deskripsi || ""}</p>
-      <p class="text-xs text-gray-400 mb-3">👁 ${p.klik || 0} klik</p>
-
-      <div class="flex gap-2 flex-wrap">
-        <button class="view bg-blue-500 text-white px-3 py-1 rounded-full text-sm">View</button>
-        <button class="edit bg-yellow-400 text-white px-3 py-1 rounded-full text-sm">Edit</button>
-        <button class="hapus bg-red-500 text-white px-3 py-1 rounded-full text-sm">Hapus</button>
-      </div>
+      <img src="${p.gambar || 'https://via.placeholder.com/400'}"
+        class="w-full h-40 object-cover rounded-xl mb-3"/>
+      <h3 class="font-bold">${p.nama}</h3>
     `;
-
-    card.querySelector(".view").onclick=()=>window.open(p.link,"_blank");
-
-    card.querySelector(".edit").onclick=()=>{
-      editId=p.id;
-      nama.value=p.nama;
-      deskripsi.value=p.deskripsi;
-      link.value=p.link;
-      gambar.value=p.gambar;
-      kategori.value=p.kategori;
-      window.scrollTo({top:0,behavior:"smooth"});
-    };
-
-    card.querySelector(".hapus").onclick=async()=>{
-      if(confirm("Hapus produk?")){
-        await deleteDoc(doc(db,"produk",p.id));
-        loadProduk();
-      }
-    };
 
     produkList.appendChild(card);
   });
 }
-
-/* SEARCH */
-searchInput.oninput = ()=>{
-  const q = searchInput.value.toLowerCase();
-  const hasil = semuaProduk.filter(p =>
-    p.nama.toLowerCase().includes(q) ||
-    p.kategori.toLowerCase().includes(q)
-  );
-  renderProduk(hasil);
-};
 </script>
 
 </body>
